@@ -32,3 +32,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+echo "src/main/resources/application.properties" >> .gitignore
+git rm --cached src/main/resources/application.properties
+git add .gitignore
+git commit -m "Hide application.properties"
+git push origin main
