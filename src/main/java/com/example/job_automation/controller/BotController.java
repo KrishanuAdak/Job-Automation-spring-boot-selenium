@@ -34,4 +34,9 @@ public class BotController {
 
         return "Auto apply completed";
     }
+    @GetMapping("/test")
+    public String test(){
+        return "Tested";
+
+    }
 }
