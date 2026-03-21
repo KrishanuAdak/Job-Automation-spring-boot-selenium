@@ -18,47 +18,42 @@ public class LoginService {
        private String naukri_password;
        @Autowired
        WebDriver driver;
-           public void login() {
 
-        driver.get("https://www.naukri.com/nlogin/login");
+       public void login() throws Exception {
 
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+    driver.get("https://www.naukri.com/nlogin/login");
 
-        // Debug logs (VERY IMPORTANT)
-        System.out.println("URL: " + driver.getCurrentUrl());
-        System.out.println("Title: " + driver.getTitle());
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
-        // Username field (more precise)
-        WebElement username = wait.until(
-            ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//input[@placeholder='Enter your active Email ID / Username']")
-            )
-        );
-        username.sendKeys(naukri_username);
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("body")));
 
-        // Password field
-        WebElement password = wait.until(
-            ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//input[@type='password']")
-            )
-        );
-        password.sendKeys(naukri_password);
+    Thread.sleep(3000); // anti-bot delay
 
-        // Login button
-        WebElement loginBtn = wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.xpath("//button[text()='Login']")
-            )
-        );
-        loginBtn.click();
+    System.out.println("URL: " + driver.getCurrentUrl());
+    System.out.println("TITLE: " + driver.getTitle());
 
-        // Wait after login (IMPORTANT)
-        wait.until(ExpectedConditions.urlContains("naukri.com"));
+    WebElement username = wait.until(
+        ExpectedConditions.visibilityOfElementLocated(
+            By.xpath("//input[@type='text']")
+        )
+    );
+    username.sendKeys(naukri_username);
 
-        System.out.println("Login attempted...");
-       System.out.println("Login successful...");
+    WebElement password = wait.until(
+        ExpectedConditions.visibilityOfElementLocated(
+            By.xpath("//input[@type='password']")
+        )
+    );
+    password.sendKeys(naukri_password);
+
+    WebElement loginBtn = wait.until(
+        ExpectedConditions.elementToBeClickable(
+            By.xpath("//button")
+        )
+    );
+    loginBtn.click();
 }
-
+         
      
 
 
