@@ -5,7 +5,6 @@ import java.util.List;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,8 +12,7 @@ public class JobApplyService {
 
     private final WebDriver driver;
 
-    @Value("${resume.path}")
-    private String resumePath;
+    //private String resumePath;
 
     public JobApplyService(WebDriver driver) {
         this.driver = driver;
@@ -96,38 +94,38 @@ public class JobApplyService {
         }
     }
 
-    private void uploadResume() {
+    // private void uploadResume() {
 
-        try {
+    //     try {
 
-            WebElement upload =
-                    driver.findElement(By.xpath("//input[@type='file']"));
+    //         WebElement upload =
+    //                 driver.findElement(By.xpath("//input[@type='file']"));
 
-            upload.sendKeys(resumePath);
+    //         upload.sendKeys(resumePath);
 
-            System.out.println("Resume uploaded");
+    //         System.out.println("Resume uploaded");
 
-        } catch (Exception e) {
+    //     } catch (Exception e) {
 
-            System.out.println("Resume upload not required");
-        }
-    }
+    //         System.out.println("Resume upload not required");
+    //     }
+    // }
 
-    private void sendMessageToRecruiter() {
+    // private void sendMessageToRecruiter() {
 
-        try {
+    //     try {
 
-            WebElement msgBox =
-                    driver.findElement(By.tagName("textarea"));
+    //         WebElement msgBox =
+    //                 driver.findElement(By.tagName("textarea"));
 
-            msgBox.sendKeys(
-                    "Hello, I am a Java Spring Boot developer with experience in microservices and backend systems. I would love to discuss this opportunity.");
+    //         msgBox.sendKeys(
+    //                 "Hello, I am a Java Spring Boot developer with experience in microservices and backend systems. I would love to discuss this opportunity.");
 
-            System.out.println("Recruiter message sent");
+    //         System.out.println("Recruiter message sent");
 
-        } catch (Exception e) {
+    //     } catch (Exception e) {
 
-            System.out.println("Recruiter message option not available");
-        }
-    }
+    //         System.out.println("Recruiter message option not available");
+    //     }
+    // }
 }
