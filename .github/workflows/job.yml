@@ -1,32 +1,39 @@
-
 name: Daily Selenium Job
 
 on:
   schedule:
-    - cron: "30 3 * * *"   # 8:00 AM IST daily
-  workflow_dispatch:       # optional manual run
+    - cron: "30 2 * * *"   # 8:00 AM IST
+  workflow_dispatch:
 
 jobs:
   run-job:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Get your code
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v3
+      # 2. Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
+      # 3. Install Firefox (for Selenium)
       - name: Install Firefox
         run: |
           sudo apt update
           sudo apt install -y firefox
 
-      - name: Build
+      # 4. Build project
+      - name: Build project
         run: mvn clean package -DskipTests
 
+      # 5. Run your Spring Boot job
       - name: Run Job
+        env:
+          NAUKRI_USERNAME: ${{ secrets.NAUKRI_USERNAME }}
+          NAUKRI_PASSWORD: ${{ secrets.NAUKRI_PASSWORD }}
         run: java -jar target/*.jar
