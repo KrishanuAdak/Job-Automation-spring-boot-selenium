@@ -1,7 +1,12 @@
 package com.example.job_automation.service;
 
+import java.time.Duration;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -13,25 +18,48 @@ public class LoginService {
        private String naukri_password;
        @Autowired
        WebDriver driver;
-        public void login() throws InterruptedException {
+           public void login() {
 
         driver.get("https://www.naukri.com/nlogin/login");
 
-        Thread.sleep(4000);
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
-        driver.findElement(By.id("usernameField"))
-                .sendKeys(naukri_username);
+        // Debug logs (VERY IMPORTANT)
+        System.out.println("URL: " + driver.getCurrentUrl());
+        System.out.println("Title: " + driver.getTitle());
 
-        driver.findElement(By.id("passwordField"))
-                .sendKeys(naukri_password);
+        // Username field (more precise)
+        WebElement username = wait.until(
+            ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//input[@placeholder='Enter your active Email ID / Username']")
+            )
+        );
+        username.sendKeys(naukri_username);
 
-        driver.findElement(By.xpath("//button[@type='submit']"))
-                .click();
+        // Password field
+        WebElement password = wait.until(
+            ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//input[@type='password']")
+            )
+        );
+        password.sendKeys(naukri_password);
 
-        Thread.sleep(6000);
+        // Login button
+        WebElement loginBtn = wait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.xpath("//button[text()='Login']")
+            )
+        );
+        loginBtn.click();
 
-        System.out.println("Login successful");
-    }
+        // Wait after login (IMPORTANT)
+        wait.until(ExpectedConditions.urlContains("naukri.com"));
+
+        System.out.println("Login attempted...");
+       System.out.println("Login successful...");
+}
+
+     
 
 
 }
