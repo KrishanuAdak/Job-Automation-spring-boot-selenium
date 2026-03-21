@@ -12,16 +12,18 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 public class DriverConfig {
 
     @Bean
-    public WebDriver webDriver() {
+public WebDriver webDriver() {
 
-        WebDriverManager.chromedriver().setup();
+    WebDriverManager.chromedriver().setup();
 
-        ChromeOptions options = new ChromeOptions();
+    ChromeOptions options = new ChromeOptions();
 
-        options.addArguments("--headless=new"); // 🔥 important
-        options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
+    options.addArguments("--headless=new");
+    options.addArguments("--no-sandbox");
+    options.addArguments("--disable-dev-shm-usage");
+    options.addArguments("--disable-gpu");
+    options.addArguments("--remote-allow-origins=*");
 
-        return new ChromeDriver(options);
-    }
+    return new ChromeDriver(options);
+}
 }
