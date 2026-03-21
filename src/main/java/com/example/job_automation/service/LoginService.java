@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 @Service
 public class LoginService {
-       @Value("${naukri.username}")
+       @Value("${NAUKRI_USERNAME:${naukri.username}}")
        private String naukri_username;
-       @Value("${naukri.password}")
+       @Value("${NAUKRI_PASSWORD:${naukri.password}}")
        private String naukri_password;
        @Autowired
        WebDriver driver;

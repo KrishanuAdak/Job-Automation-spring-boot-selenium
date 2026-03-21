@@ -1,8 +1,8 @@
 package com.example.job_automation.config;
 
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -10,22 +10,18 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 
 @Configuration
 public class DriverConfig {
-   @Bean
+
+    @Bean
     public WebDriver webDriver() {
 
-    WebDriverManager.firefoxdriver().setup();
+        WebDriverManager.chromedriver().setup();
 
-    FirefoxOptions options = new FirefoxOptions();
+        ChromeOptions options = new ChromeOptions();
 
-    // 🔥 VERY IMPORTANT
-    options.addArguments("--headless");
+        options.addArguments("--headless=new"); // 🔥 important
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
 
-    // Optional but recommended for CI
-    options.addArguments("--no-sandbox");
-    options.addArguments("--disable-dev-shm-usage");
-
-    return new FirefoxDriver(options);
-}
-
-    
+        return new ChromeDriver(options);
+    }
 }

@@ -21,11 +21,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Install Firefox (for Selenium)
-      - name: Install Firefox
+      # 3. Install Chrome
+      - name: Install Chrome
         run: |
-          sudo apt update
-          sudo apt install -y firefox
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
 
       # 4. Build project
       - name: Build project
