@@ -21,40 +21,45 @@ public class LoginService {
 
        public void login() throws Exception {
 
+
     driver.get("https://www.naukri.com/nlogin/login");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("body")));
 
-    Thread.sleep(3000); // anti-bot delay
+    Thread.sleep(3000);
 
     System.out.println("URL: " + driver.getCurrentUrl());
     System.out.println("TITLE: " + driver.getTitle());
 
+    System.out.println("IFRAMES: " + driver.findElements(By.tagName("iframe")).size());
+
+    // 🔥 Switch if iframe exists
+    if (driver.findElements(By.tagName("iframe")).size() > 0) {
+        driver.switchTo().frame(0);
+    }
+
     WebElement username = wait.until(
-        ExpectedConditions.visibilityOfElementLocated(
-            By.xpath("//input[@type='text']")
-        )
+        ExpectedConditions.visibilityOfElementLocated(By.xpath("//input[@type='text']"))
     );
     username.sendKeys(naukri_username);
 
     WebElement password = wait.until(
-        ExpectedConditions.visibilityOfElementLocated(
-            By.xpath("//input[@type='password']")
-        )
+        ExpectedConditions.visibilityOfElementLocated(By.xpath("//input[@type='password']"))
     );
     password.sendKeys(naukri_password);
 
     WebElement loginBtn = wait.until(
-        ExpectedConditions.elementToBeClickable(
-            By.xpath("//button")
-        )
+        ExpectedConditions.elementToBeClickable(By.xpath("//button"))
     );
     loginBtn.click();
+
+    Thread.sleep(5000);
+}
 }
          
      
 
 
-}
+
