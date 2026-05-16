@@ -1,11 +1,13 @@
 package com.example.job_automation.service;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.openqa.selenium.By;
@@ -17,17 +19,20 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
 
+import jakarta.mail.MessagingException;
+
 @Service
 public class JobAutomationService {
 
+    private final EmailService emailService;
     private final WebDriver driver;
-    private final String job_url =
-        "https://www.naukri.com/java-spring-boot-developer-jobs?experience=3&jobAge=1";
+    private final String job_url = "https://www.naukri.com/java-spring-boot-developer-jobs?experience=3&jobAge=1";
 
-    private static final String EXPECTED_SALARY = "700000";
+    private static final String CURRENT_SALARY = "450000";
+    private static final String EXPECTED_SALARY = "850000";
     private static final String DATE_OF_BIRTH = "26/04/2000";
-    private static final String EXPERIENCE_YEARS = "2";
-    private static final String NOTICE_PERIOD = "30";
+    private static final String EXPERIENCE_YEARS = "2.3";
+    private static final String NOTICE_PERIOD = "60";
 
     private int totalApplied = 0;
     private int totalSkipped = 0;
@@ -37,8 +42,9 @@ public class JobAutomationService {
     private Sheet sheet;
     private int excelRowNum = 1;
 
-    public JobAutomationService(WebDriver driver) {
+    public JobAutomationService(WebDriver driver, EmailService emailService) {
         this.driver = driver;
+        this.emailService = emailService;
     }
 
     private void initExcel() {
@@ -47,7 +53,7 @@ public class JobAutomationService {
 
         // Header row
         Row header = sheet.createRow(0);
-        String[] columns = {"#", "Job Title", "Company", "Status", "Reason", "Job URL", "Timestamp"};
+        String[] columns = { "#", "Job Title", "Company", "Status", "Reason", "Job URL", "Timestamp" };
 
         CellStyle headerStyle = workbook.createCellStyle();
         Font font = workbook.createFont();
@@ -67,7 +73,7 @@ public class JobAutomationService {
     }
 
     private void addExcelRow(int num, String title, String company,
-                              String status, String reason, String url) {
+            String status, String reason, String url) {
         Row row = sheet.createRow(excelRowNum++);
         row.createCell(0).setCellValue(num);
         row.createCell(1).setCellValue(title);
@@ -76,7 +82,7 @@ public class JobAutomationService {
         row.createCell(4).setCellValue(reason);
         row.createCell(5).setCellValue(url);
         row.createCell(6).setCellValue(
-            LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
 
         // Color code by status
         CellStyle style = workbook.createCellStyle();
@@ -96,7 +102,7 @@ public class JobAutomationService {
     private void saveExcel() {
         try {
             String fileName = "naukri_applications_" +
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy_HH-mm")) + ".xlsx";
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy_HH-mm")) + ".xlsx";
             String filePath = System.getProperty("user.home") + "/Desktop/" + fileName;
             FileOutputStream fos = new FileOutputStream(filePath);
             workbook.write(fos);
@@ -108,7 +114,7 @@ public class JobAutomationService {
         }
     }
 
-    public void processJobs() throws InterruptedException {
+    public void processJobs() throws InterruptedException, MessagingException {
         initExcel();
         driver.get(job_url);
         handleLocationPopup(driver);
@@ -122,7 +128,7 @@ public class JobAutomationService {
 
             try {
                 wait.until(ExpectedConditions.presenceOfElementLocated(
-                    By.cssSelector(".cust-job-tuple")));
+                        By.cssSelector(".cust-job-tuple")));
             } catch (Exception e) {
                 System.out.println("No jobs found on page " + pageNum + ", stopping.");
                 break;
@@ -147,22 +153,23 @@ public class JobAutomationService {
                     // Try to get company name
                     try {
                         company = job.findElement(
-                            By.cssSelector(".comp-name, [class*='comp-name'], a.comp-name"))
-                            .getText();
-                    } catch (Exception ignored) {}
+                                By.cssSelector(".comp-name, [class*='comp-name'], a.comp-name"))
+                                .getText();
+                    } catch (Exception ignored) {
+                    }
 
                     jobUrl = job.findElement(By.cssSelector("a.title")).getAttribute("href");
                     jobNum++;
 
                     System.out.println("\n[Page " + pageNum + " | " + (i + 1) + "/" +
-                        jobs.size() + "] " + title + " @ " + company);
+                            jobs.size() + "] " + title + " @ " + company);
 
                     ((JavascriptExecutor) driver).executeScript(
-                        "arguments[0].scrollIntoView(true);", job);
+                            "arguments[0].scrollIntoView(true);", job);
                     Thread.sleep(500);
 
                     ((JavascriptExecutor) driver).executeScript(
-                        "window.open(arguments[0]);", jobUrl);
+                            "window.open(arguments[0]);", jobUrl);
 
                     List<String> tabs = new ArrayList<>(driver.getWindowHandles());
                     driver.switchTo().window(tabs.get(tabs.size() - 1));
@@ -171,7 +178,7 @@ public class JobAutomationService {
                     handleLocationPopup(driver);
 
                     List<WebElement> applyButtons = driver.findElements(
-                        By.cssSelector(".apply-button"));
+                            By.cssSelector(".apply-button"));
                     WebElement applyBtn = null;
                     for (WebElement btn : applyButtons) {
                         if (btn.getText().trim().equalsIgnoreCase("Apply")) {
@@ -186,7 +193,7 @@ public class JobAutomationService {
                         addExcelRow(jobNum, title, company, "⚠ Skipped", "No Apply button", jobUrl);
                     } else {
                         ((JavascriptExecutor) driver).executeScript(
-                            "arguments[0].click();", applyBtn);
+                                "arguments[0].click();", applyBtn);
                         System.out.println("  ✓ Clicked Apply!");
                         Thread.sleep(2000);
                         handleLocationPopup(driver);
@@ -203,21 +210,23 @@ public class JobAutomationService {
                 } finally {
                     try {
                         List<String> tabs = new ArrayList<>(driver.getWindowHandles());
-                        if (tabs.size() > 1) driver.close();
+                        if (tabs.size() > 1)
+                            driver.close();
                         driver.switchTo().window(mainTab);
                         Thread.sleep(1000);
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
                 }
             }
 
             // ===== PAGINATION =====
             try {
                 ((JavascriptExecutor) driver).executeScript(
-                    "window.scrollTo(0, document.body.scrollHeight)");
+                        "window.scrollTo(0, document.body.scrollHeight)");
                 Thread.sleep(1000);
 
                 List<WebElement> nextBtns = driver.findElements(
-                    By.xpath("//a[contains(@class,'btn-secondary') and .//span[text()='Next']]"));
+                        By.xpath("//a[contains(@class,'btn-secondary') and .//span[text()='Next']]"));
 
                 if (nextBtns.isEmpty() || !nextBtns.get(0).isDisplayed()) {
                     System.out.println("\n✅ No more pages, all done!");
@@ -239,7 +248,15 @@ public class JobAutomationService {
         }
 
         // Save Excel at the end
-        saveExcel();
+        // saveExcel();
+        String fileName = "naukri_applications_" +
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy_HH-mm")) + ".xlsx";
+
+        String filePath = System.getProperty("user.home") + "/Desktop/" + fileName;
+
+        File excelFile = new File(filePath); // the path where you saved the excel
+
+        this.emailService.sendEmail(excelFile);
 
         System.out.println("\n==============================");
         System.out.println("✅ Total Applied : " + totalApplied);
@@ -251,7 +268,7 @@ public class JobAutomationService {
         try {
             WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(5));
             shortWait.until(ExpectedConditions.presenceOfElementLocated(
-                By.cssSelector(".chatbot_Drawer, [class*='chatbot']")));
+                    By.cssSelector(".chatbot_Drawer, [class*='chatbot']")));
 
             System.out.println("  → Chatbot detected, answering questions...");
 
@@ -260,41 +277,41 @@ public class JobAutomationService {
                 Thread.sleep(1500);
 
                 List<WebElement> chatbot = driver.findElements(
-                    By.cssSelector(".chatbot_Drawer, [class*='chatbot_Drawer']"));
+                        By.cssSelector(".chatbot_Drawer, [class*='chatbot_Drawer']"));
                 if (chatbot.isEmpty() || !chatbot.get(0).isDisplayed()) {
                     System.out.println("  → Chatbot closed, done!");
                     break;
                 }
 
                 List<WebElement> botMessages = driver.findElements(
-                    By.cssSelector(".botMsg, [class*='botMsg']"));
+                        By.cssSelector(".botMsg, [class*='botMsg']"));
                 String lastQuestion = "";
                 if (!botMessages.isEmpty()) {
                     lastQuestion = botMessages.get(botMessages.size() - 1)
-                        .getText().toLowerCase().trim();
+                            .getText().toLowerCase().trim();
                     System.out.println("  → Question: " + lastQuestion);
                 }
 
                 // DEBUG
                 List<WebElement> contentEditable = driver.findElements(
-                    By.xpath("//*[@contenteditable='true']"));
+                        By.xpath("//*[@contenteditable='true']"));
                 for (WebElement el : contentEditable) {
                     if (el.isDisplayed()) {
                         System.out.println("    EDITABLE tag=[" + el.getTagName() +
-                            "] id=[" + el.getAttribute("id") +
-                            "] class=[" + el.getAttribute("class") + "]");
+                                "] id=[" + el.getAttribute("id") +
+                                "] class=[" + el.getAttribute("class") + "]");
                     }
                 }
                 List<WebElement> chatbotChildren = driver.findElements(
-                    By.cssSelector(".chatbot_Drawer *"));
+                        By.cssSelector(".chatbot_Drawer *"));
                 for (WebElement el : chatbotChildren) {
                     String tag = el.getTagName();
                     if (el.isDisplayed() && (tag.equals("input") || tag.equals("textarea") ||
-                        (tag.equals("div") && el.getAttribute("contenteditable") != null))) {
+                            (tag.equals("div") && el.getAttribute("contenteditable") != null))) {
                         System.out.println("    tag=[" + tag +
-                            "] contenteditable=[" + el.getAttribute("contenteditable") +
-                            "] class=[" + el.getAttribute("class") +
-                            "] id=[" + el.getAttribute("id") + "]");
+                                "] contenteditable=[" + el.getAttribute("contenteditable") +
+                                "] class=[" + el.getAttribute("class") +
+                                "] id=[" + el.getAttribute("id") + "]");
                     }
                 }
 
@@ -302,13 +319,13 @@ public class JobAutomationService {
 
                 // 1. Radio buttons
                 List<WebElement> radioOptions = driver.findElements(
-                    By.cssSelector("[class*='singleselect-radiobutton'] [class*='container'], " +
-                        "[id*='SingleSelectRadioButton'] div[id*='src']"));
+                        By.cssSelector("[class*='singleselect-radiobutton'] [class*='container'], " +
+                                "[id*='SingleSelectRadioButton'] div[id*='src']"));
                 if (!radioOptions.isEmpty()) {
                     for (WebElement option : radioOptions) {
                         if (option.isDisplayed()) {
                             ((JavascriptExecutor) driver).executeScript(
-                                "arguments[0].click();", option);
+                                    "arguments[0].click();", option);
                             System.out.println("  → Selected radio: " + option.getText());
                             answered = true;
                             Thread.sleep(1000);
@@ -322,7 +339,7 @@ public class JobAutomationService {
                     for (WebElement el : contentEditable) {
                         if (el.isDisplayed()) {
                             ((JavascriptExecutor) driver).executeScript(
-                                "arguments[0].innerHTML = '';", el);
+                                    "arguments[0].innerHTML = '';", el);
                             String answer = getAnswerForQuestion(lastQuestion);
                             el.sendKeys(answer);
                             System.out.println("  → Typed in contenteditable: " + answer);
@@ -352,18 +369,19 @@ public class JobAutomationService {
                                 Thread.sleep(1000);
                                 break;
                             }
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
 
                 // 4. Chatbot button
                 if (!answered) {
                     List<WebElement> sendBtns = driver.findElements(
-                        By.cssSelector(".chatbot_Drawer button, [class*='chatbot'] button"));
+                            By.cssSelector(".chatbot_Drawer button, [class*='chatbot'] button"));
                     for (WebElement btn : sendBtns) {
                         if (btn.isDisplayed() && btn.isEnabled()) {
                             ((JavascriptExecutor) driver).executeScript(
-                                "arguments[0].click();", btn);
+                                    "arguments[0].click();", btn);
                             System.out.println("  → Clicked chatbot button: " + btn.getText());
                             answered = true;
                             Thread.sleep(1000);
@@ -384,8 +402,9 @@ public class JobAutomationService {
     }
 
     private String getAnswerForQuestion(String question) {
-        if (question.contains("salary") || question.contains("ctc") ||
-            question.contains("package")) {
+        if (question.contains("current salary") || question.contains("current ctc")) {
+            return EXPECTED_SALARY;
+        } else if (question.contains("expected salary") || question.contains("expected ctc")) {
             return EXPECTED_SALARY;
         } else if (question.contains("dob") || question.contains("birth")) {
             return DATE_OF_BIRTH;
@@ -406,12 +425,13 @@ public class JobAutomationService {
             alertWait.until(ExpectedConditions.alertIsPresent());
             driver.switchTo().alert().accept();
             System.out.println("  → Browser location alert accepted");
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         try {
             List<WebElement> allowBtns = driver.findElements(
-                By.xpath("//*[contains(text(),'Allow') or contains(text(),'Yes') " +
-                    "or contains(text(),'OK')]"));
+                    By.xpath("//*[contains(text(),'Allow') or contains(text(),'Yes') " +
+                            "or contains(text(),'OK')]"));
             for (WebElement btn : allowBtns) {
                 if (btn.isDisplayed()) {
                     btn.click();
@@ -420,7 +440,8 @@ public class JobAutomationService {
                     break;
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 }
 // ```

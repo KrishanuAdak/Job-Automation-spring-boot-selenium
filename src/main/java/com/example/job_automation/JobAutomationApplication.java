@@ -10,9 +10,6 @@ import com.example.job_automation.service.LoginService;
 
 @SpringBootApplication
 public class JobAutomationApplication {
-	// public JobAutomationApplication(JobAutomationService automation) throws InterruptedException {
-	// 	automation.searchJobs();
-	// }
 
 	public static void main(String[] args) {
 		SpringApplication.run(JobAutomationApplication.class, args);

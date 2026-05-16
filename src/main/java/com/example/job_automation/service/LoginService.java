@@ -18,10 +18,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class LoginService {
 
-    @Value("${NAUKRI_USERNAME:${naukri.username}}")
+    @Value("${NAUKRI_USERNAME}")
     private String naukri_username;
 
-    @Value("${NAUKRI_PASSWORD:${naukri.password}}")
+    @Value("${NAUKRI_PASSWORD}")
     private String naukri_password;
 
     @Autowired
