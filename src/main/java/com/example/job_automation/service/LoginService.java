@@ -33,21 +33,16 @@ public class LoginService {
 
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
         wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("body")));
-
-        // Give page time to fully render
         Thread.sleep(5000);
 
         System.out.println("URL: " + driver.getCurrentUrl());
         System.out.println("TITLE: " + driver.getTitle());
-        System.out.println("PAGE SOURCE LENGTH: " + driver.getPageSource().length());
-
-        // Take screenshot to see what page looks like
         takeScreenshot("after_load.png");
 
-        // Close any popup/overlay if present
+        // Close popup if present
         try {
             WebElement closeBtn = driver.findElement(
-                By.xpath("//*[contains(@class,'close') or contains(@class,'modal')]//button | //button[contains(@class,'close')]")
+                By.xpath("//button[contains(@class,'close')] | //*[contains(@class,'modal')]//button")
             );
             closeBtn.click();
             Thread.sleep(1000);
@@ -56,7 +51,7 @@ public class LoginService {
             System.out.println("No popup found");
         }
 
-        // FIX: Use placeholder-based xpath instead of type='text'
+        // ✅ FIXED xpath
         WebElement username = wait.until(
             ExpectedConditions.elementToBeClickable(
                 By.xpath("//input[@placeholder='Enter your active Email ID / Username']")
@@ -77,7 +72,7 @@ public class LoginService {
         password.sendKeys(naukri_password);
         System.out.println("Entered password");
 
-        // FIX: Use specific login button xpath
+        // ✅ FIXED login button xpath
         WebElement loginBtn = wait.until(
             ExpectedConditions.elementToBeClickable(
                 By.xpath("//button[normalize-space()='Login']")
