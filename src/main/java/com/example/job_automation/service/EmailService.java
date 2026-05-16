@@ -15,9 +15,9 @@ import jakarta.mail.internet.MimeMessage;
 public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
-    @Value("")
+    @Value("${FROM_EMAIL}")
     private String fromEmail;
-    @Value("")
+    @Value("${TO_EMAIL}")
     private String toEmail;
     private final String subject="Job Application Update - "+ System.currentTimeMillis();
 
