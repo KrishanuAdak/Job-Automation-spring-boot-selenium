@@ -252,9 +252,8 @@ public class JobAutomationService {
         String fileName = "naukri_applications_" +
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy_HH-mm")) + ".xlsx";
 
-        String filePath = System.getProperty("user.home") + "/Desktop/" + fileName;
 
-        File excelFile = new File(filePath); // the path where you saved the excel
+        File excelFile = new File(fileName); // the path where you saved the excel
 
         this.emailService.sendEmail(excelFile);
 
