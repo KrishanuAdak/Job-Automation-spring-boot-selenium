@@ -42,8 +42,7 @@ public class LoginService {
         // Close popup if present
         try {
             WebElement closeBtn = driver.findElement(
-                By.xpath("//button[contains(@class,'close')] | //*[contains(@class,'modal')]//button")
-            );
+                    By.xpath("//button[contains(@class,'close')] | //*[contains(@class,'modal')]//button"));
             closeBtn.click();
             Thread.sleep(1000);
             System.out.println("Closed popup");
@@ -53,20 +52,16 @@ public class LoginService {
 
         // ✅ FIXED xpath
         WebElement username = wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.xpath("//input[@placeholder='Enter your active Email ID / Username']")
-            )
-        );
+                ExpectedConditions.elementToBeClickable(
+                        By.xpath("//input[@placeholder='Enter your active Email ID / Username']")));
         username.click();
         username.clear();
         username.sendKeys(naukri_username);
         System.out.println("Entered username");
 
         WebElement password = wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.xpath("//input[@placeholder='Enter your password']")
-            )
-        );
+                ExpectedConditions.elementToBeClickable(
+                        By.xpath("//input[@placeholder='Enter your password']")));
         password.click();
         password.clear();
         password.sendKeys(naukri_password);
@@ -74,16 +69,23 @@ public class LoginService {
 
         // ✅ FIXED login button xpath
         WebElement loginBtn = wait.until(
-            ExpectedConditions.elementToBeClickable(
-                By.xpath("//button[normalize-space()='Login']")
-            )
-        );
+                ExpectedConditions.elementToBeClickable(
+                        By.xpath("//button[normalize-space()='Login']")));
         loginBtn.click();
         System.out.println("Clicked login");
 
         Thread.sleep(5000);
         takeScreenshot("after_login.png");
         System.out.println("Login done. Current URL: " + driver.getCurrentUrl());
+        // Debug: print all input fields
+        System.out.println("=== ALL INPUTS ON PAGE ===");
+        driver.findElements(By.tagName("input")).forEach(el -> {
+            System.out.println("Input - type: " + el.getAttribute("type")
+                    + " | placeholder: " + el.getAttribute("placeholder")
+                    + " | id: " + el.getAttribute("id")
+                    + " | name: " + el.getAttribute("name"));
+        });
+        System.out.println("=== END INPUTS ===");
     }
 
     private void takeScreenshot(String filename) {
@@ -91,6 +93,7 @@ public class LoginService {
             File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
             FileUtils.copyFile(src, new File(filename));
             System.out.println("Screenshot saved: " + filename);
+
         } catch (Exception e) {
             System.out.println("Screenshot failed: " + e.getMessage());
         }
