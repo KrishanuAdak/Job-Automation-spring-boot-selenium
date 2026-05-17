@@ -5,6 +5,8 @@ import java.time.Duration;
 
 import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -39,128 +41,81 @@ public class LoginService {
         System.out.println("TITLE: " + driver.getTitle());
         takeScreenshot("after_load.png");
 
-        // Print all inputs found on page
-        System.out.println("=== ALL INPUTS ON PAGE ===");
-        driver.findElements(By.tagName("input")).forEach(el -> {
-            System.out.println("Input - type: " + el.getAttribute("type")
-                + " | placeholder: " + el.getAttribute("placeholder")
-                + " | id: " + el.getAttribute("id")
-                + " | name: " + el.getAttribute("name"));
-        });
-        System.out.println("=== END INPUTS ===");
-
-        // Close popup if present
-        try {
-            WebElement closeBtn = driver.findElement(
-                By.xpath("//button[contains(@class,'close')] | //*[contains(@class,'modal')]//button")
-            );
-            closeBtn.click();
-            Thread.sleep(1000);
-            System.out.println("Closed popup");
-        } catch (Exception ignored) {
-            System.out.println("No popup found");
-        }
-
-        // Try multiple xpaths to find username field
-        WebElement username = null;
-        String[] usernameXpaths = {
-            "//input[@id='usernameField']",
-            "//input[@id='username']",
-            "//input[contains(@placeholder,'Email ID')]",
-            "//input[contains(@placeholder,'Email')]",
-            "//input[contains(@placeholder,'email')]",
-            "//input[contains(@placeholder,'Username')]",
-            "//input[contains(@placeholder,'username')]",
-            "//input[@type='text']",
-            "//input[@name='username']",
-            "//input[@name='email']",
-        };
-
-        for (String xpath : usernameXpaths) {
-            try {
-                username = new WebDriverWait(driver, Duration.ofSeconds(5))
-                    .until(ExpectedConditions.elementToBeClickable(By.xpath(xpath)));
-                System.out.println("✅ Found username field with xpath: " + xpath);
-                break;
-            } catch (Exception e) {
-                System.out.println("❌ xpath failed: " + xpath);
-            }
-        }
-
-        if (username == null) {
-            takeScreenshot("username_not_found.png");
-            throw new RuntimeException("Could not find username field!");
-        }
-
+        // ✅ Find and fill username using id directly
+        WebElement username = wait.until(
+            ExpectedConditions.elementToBeClickable(By.id("usernameField"))
+        );
+        // ✅ Use JS to set value — more reliable in headless
+        ((JavascriptExecutor) driver).executeScript(
+            "arguments[0].value = '';", username);
         username.click();
-        username.clear();
+        Thread.sleep(500);
         username.sendKeys(naukri_username);
-        System.out.println("Entered username");
+        Thread.sleep(500);
+        System.out.println("Entered username: " + driver.findElement(
+            By.id("usernameField")).getAttribute("value"));
 
-        // Try multiple xpaths to find password field
-        WebElement password = null;
-        String[] passwordXpaths = {
-            "//input[@type='password']",
-            "//input[contains(@placeholder,'Password')]",
-            "//input[contains(@placeholder,'password')]",
-            "//input[@id='passwordField']",
-            "//input[@id='password']",
-            "//input[@name='password']",
-        };
-
-        for (String xpath : passwordXpaths) {
-            try {
-                password = new WebDriverWait(driver, Duration.ofSeconds(5))
-                    .until(ExpectedConditions.elementToBeClickable(By.xpath(xpath)));
-                System.out.println("✅ Found password field with xpath: " + xpath);
-                break;
-            } catch (Exception e) {
-                System.out.println("❌ xpath failed: " + xpath);
-            }
-        }
-
-        if (password == null) {
-            takeScreenshot("password_not_found.png");
-            throw new RuntimeException("Could not find password field!");
-        }
-
+        // ✅ Find and fill password using id directly
+        WebElement password = wait.until(
+            ExpectedConditions.elementToBeClickable(By.id("passwordField"))
+        );
+        ((JavascriptExecutor) driver).executeScript(
+            "arguments[0].value = '';", password);
         password.click();
-        password.clear();
+        Thread.sleep(500);
         password.sendKeys(naukri_password);
+        Thread.sleep(500);
         System.out.println("Entered password");
 
-        // Try multiple xpaths for login button
-        WebElement loginBtn = null;
-        String[] loginBtnXpaths = {
-            "//button[normalize-space()='Login']",
-            "//button[contains(text(),'Login')]",
-            "//button[@type='submit']",
-            "//input[@type='submit']",
-            "//button[contains(@class,'login')]",
-        };
+        takeScreenshot("before_login_click.png");
 
-        for (String xpath : loginBtnXpaths) {
-            try {
-                loginBtn = new WebDriverWait(driver, Duration.ofSeconds(5))
-                    .until(ExpectedConditions.elementToBeClickable(By.xpath(xpath)));
-                System.out.println("✅ Found login button with xpath: " + xpath);
-                break;
-            } catch (Exception e) {
-                System.out.println("❌ xpath failed: " + xpath);
-            }
+        // ✅ Try 3 ways to click login button
+        WebElement loginBtn = wait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.xpath("//button[normalize-space()='Login']")
+            )
+        );
+
+        // Method 1: Normal click
+        try {
+            loginBtn.click();
+            System.out.println("Clicked login - normal click");
+        } catch (Exception e) {
+            System.out.println("Normal click failed, trying JS click");
+            // Method 2: JavaScript click
+            ((JavascriptExecutor) driver).executeScript(
+                "arguments[0].click();", loginBtn);
+            System.out.println("Clicked login - JS click");
         }
 
-        if (loginBtn == null) {
-            takeScreenshot("loginbtn_not_found.png");
-            throw new RuntimeException("Could not find login button!");
+        Thread.sleep(2000);
+        takeScreenshot("after_click.png");
+
+        // Method 3: If still on login page, press Enter
+        if (driver.getCurrentUrl().contains("nlogin/login")) {
+            System.out.println("Still on login page, trying Enter key");
+            password.sendKeys(Keys.ENTER);
+            Thread.sleep(2000);
+            takeScreenshot("after_enter.png");
         }
 
-        loginBtn.click();
-        System.out.println("Clicked login");
+        // ✅ Wait for redirect away from login page
+        try {
+            WebDriverWait redirectWait = new WebDriverWait(driver, Duration.ofSeconds(20));
+            redirectWait.until(ExpectedConditions.not(
+                ExpectedConditions.urlContains("nlogin/login")
+            ));
+            System.out.println("✅ Login successful!");
+        } catch (Exception e) {
+            takeScreenshot("login_failed.png");
+            System.out.println("❌ Still on login page after all attempts");
+            System.out.println("Page source length: " + driver.getPageSource().length());
+            throw new RuntimeException("Login failed!");
+        }
 
-        Thread.sleep(5000);
+        Thread.sleep(2000);
         takeScreenshot("after_login.png");
-        System.out.println("Login done. Current URL: " + driver.getCurrentUrl());
+        System.out.println("✅ Login done. Current URL: " + driver.getCurrentUrl());
     }
 
     private void takeScreenshot(String filename) {
