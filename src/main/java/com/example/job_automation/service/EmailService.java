@@ -4,6 +4,7 @@ import java.io.File;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,8 @@ public class EmailService {
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
         try {
-            helper.addAttachment("Jobs_Applied_"+System.currentTimeMillis(), excelFile);
+            helper.addAttachment("jobs_applied.xlss", new FileSystemResource(excelFile), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            //helper.addAttachment("Jobs_Applied_"+System.currentTimeMillis(), excelFile,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);
             helper.setSubject(subject);
