@@ -4,11 +4,13 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 import com.example.job_automation.service.JobAutomationService;
 import com.example.job_automation.service.LoginService;
 
 @SpringBootApplication
+@EnableAsync
 public class JobAutomationApplication {
 
 	public static void main(String[] args) {

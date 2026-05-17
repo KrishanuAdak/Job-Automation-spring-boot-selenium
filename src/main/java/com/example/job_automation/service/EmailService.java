@@ -1,12 +1,14 @@
 package com.example.job_automation.service;
 
 import java.io.File;
+import java.time.LocalDate;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
@@ -20,14 +22,15 @@ public class EmailService {
     private String fromEmail;
     @Value("${TO_EMAIL}")
     private String toEmail;
-    private final String subject="Job Application Update - "+ System.currentTimeMillis();
+    private final String subject="Job Application Update - "+ LocalDate.now();
 
+    @Async
     public void sendEmail( File excelFile) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
         try {
-            helper.addAttachment("jobs_applied.xlss", new FileSystemResource(excelFile), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            helper.addAttachment("jobs_applied.xlsx", new FileSystemResource(excelFile), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             //helper.addAttachment("Jobs_Applied_"+System.currentTimeMillis(), excelFile,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);

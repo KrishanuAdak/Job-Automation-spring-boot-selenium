@@ -133,173 +133,188 @@ public class JobAutomationService {
         }
         return false;
     }
-
     public void processJobs() throws InterruptedException, MessagingException {
 
-        initExcel();
+    initExcel();
 
-        // ✅ Start the 30-minute timer
-        Instant startTime = Instant.now();
-        System.out.println("⏱ Started at: " + LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("HH:mm:ss")) + " | Will stop after 30 minutes.");
+    // Start the 30-minute timer
+    Instant startTime = Instant.now();
+    System.out.println("⏱ Started at: " + LocalDateTime.now().format(
+            DateTimeFormatter.ofPattern("HH:mm:ss")) + " | Will stop after 30 minutes.");
 
-        driver.get(job_url);
-        handleLocationPopup(driver);
+    driver.get(job_url);
+    Thread.sleep(3000);
 
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+    System.out.println("Jobs page URL: " + driver.getCurrentUrl());
+    System.out.println("Jobs page title: " + driver.getTitle());
 
-        int pageNum = 1;
-        int jobNum = 0;
+    // Debug — find what job card class Naukri is using
+    System.out.println("=== FINDING JOB CARD ELEMENTS ===");
+    driver.findElements(By.cssSelector("article, [class*='job'], [class*='tuple'], [class*='card']"))
+            .stream()
+            .limit(5) // only print first 5 to avoid spam
+            .forEach(el -> System.out.println("Element class: " + el.getAttribute("class")));
+    System.out.println("=== END JOB CARD ELEMENTS ===");
 
-        while (true) {
+    handleLocationPopup(driver);
 
-            // ✅ Check time at start of each page
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+
+    int pageNum = 1;
+    int jobNum = 0;
+
+    while (true) {
+
+        // Check time at start of each page
+        if (isTimeUp(startTime)) break;
+
+        System.out.println("\n========== PAGE " + pageNum + " ==========");
+
+        try {
+            wait.until(ExpectedConditions.presenceOfElementLocated(
+                    By.cssSelector(".cust-job-tuple")));
+        } catch (Exception e) {
+            System.out.println("No jobs found on page " + pageNum);
+            break;
+        }
+
+        List<WebElement> jobs = driver.findElements(By.cssSelector(".cust-job-tuple"));
+        System.out.println("Jobs on this page: " + jobs.size());
+
+        String mainTab = driver.getWindowHandle();
+
+        for (int i = 0; i < jobs.size(); i++) {
+
+            // Check time before each job
             if (isTimeUp(startTime)) break;
 
-            System.out.println("\n========== PAGE " + pageNum + " ==========");
+            long elapsed = Duration.between(startTime, Instant.now()).toMinutes();
+            System.out.println("⏱ Time elapsed: " + elapsed + "/" + MAX_DURATION_MINUTES + " mins");
+
+            String title = "Unknown";
+            String company = "Unknown";
+            String jobUrl = "";
 
             try {
-                wait.until(ExpectedConditions.presenceOfElementLocated(
-                        By.cssSelector(".cust-job-tuple")));
-            } catch (Exception e) {
-                System.out.println("No jobs found on page " + pageNum);
-                break;
-            }
+                jobs = driver.findElements(By.cssSelector(".cust-job-tuple"));
+                WebElement job = jobs.get(i);
 
-            List<WebElement> jobs = driver.findElements(By.cssSelector(".cust-job-tuple"));
-            System.out.println("Jobs on this page: " + jobs.size());
-
-            String mainTab = driver.getWindowHandle();
-
-            for (int i = 0; i < jobs.size(); i++) {
-
-                // ✅ Check time before each job
-                if (isTimeUp(startTime)) break;
-
-                // ✅ Print remaining time
-                long elapsed = Duration.between(startTime, Instant.now()).toMinutes();
-                System.out.println("⏱ Time elapsed: " + elapsed + "/" + MAX_DURATION_MINUTES + " mins");
-
-                String title = "Unknown";
-                String company = "Unknown";
-                String jobUrl = "";
+                title = job.findElement(By.cssSelector("a.title")).getText();
 
                 try {
-                    jobs = driver.findElements(By.cssSelector(".cust-job-tuple"));
-                    WebElement job = jobs.get(i);
+                    company = job.findElement(
+                            By.cssSelector(".comp-name, [class*='comp-name'], a.comp-name")).getText();
+                } catch (Exception ignored) {}
 
-                    title = job.findElement(By.cssSelector("a.title")).getText();
+                jobUrl = job.findElement(By.cssSelector("a.title")).getAttribute("href");
+                jobNum++;
 
-                    try {
-                        company = job.findElement(
-                                By.cssSelector(".comp-name, [class*='comp-name'], a.comp-name")).getText();
-                    } catch (Exception ignored) {}
+                System.out.println("\n[Page " + pageNum + " | " + (i + 1) + "/" + jobs.size() + "] "
+                        + title + " @ " + company);
 
-                    jobUrl = job.findElement(By.cssSelector("a.title")).getAttribute("href");
-                    jobNum++;
-
-                    System.out.println("\n[Page " + pageNum + " | " + (i + 1) + "/" + jobs.size() + "] "
-                            + title + " @ " + company);
-
-                    ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", job);
-                    Thread.sleep(1000);
-
-                    ((JavascriptExecutor) driver).executeScript("window.open(arguments[0]);", jobUrl);
-
-                    List<String> tabs = new ArrayList<>(driver.getWindowHandles());
-                    driver.switchTo().window(tabs.get(tabs.size() - 1));
-                    Thread.sleep(3000);
-
-                    handleLocationPopup(driver);
-
-                    List<WebElement> applyButtons = driver.findElements(By.cssSelector(".apply-button"));
-                    WebElement applyBtn = null;
-
-                    for (WebElement btn : applyButtons) {
-                        if (btn.getText().trim().equalsIgnoreCase("Apply")) {
-                            applyBtn = btn;
-                            break;
-                        }
-                    }
-
-                    if (applyBtn == null) {
-                        System.out.println("⚠ No Apply button, skipping.");
-                        totalSkipped++;
-                        addExcelRow(jobNum, title, company, "⚠ Skipped", "No Apply button", jobUrl);
-                    } else {
-                        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", applyBtn);
-                        System.out.println("✓ Clicked Apply!");
-                        Thread.sleep(2000);
-
-                        handleLocationPopup(driver);
-                        handleChatbotQuestions(driver, wait);
-
-                        totalApplied++;
-                        System.out.println("✅ Applied to: " + title);
-                        addExcelRow(jobNum, title, company, "✅ Applied", "", jobUrl);
-                    }
-
-                } catch (Exception e) {
-                    System.out.println("❌ Error: " + e.getMessage());
-                    totalSkipped++;
-                    addExcelRow(jobNum, title, company, "❌ Error", e.getMessage(), jobUrl);
-
-                } finally {
-                    try {
-                        List<String> tabs = new ArrayList<>(driver.getWindowHandles());
-                        if (tabs.size() > 1) driver.close();
-                        driver.switchTo().window(mainTab);
-                        Thread.sleep(1000);
-                    } catch (Exception ignored) {}
-                }
-            }
-
-            // ✅ Check time before going to next page
-            if (isTimeUp(startTime)) break;
-
-            try {
                 ((JavascriptExecutor) driver).executeScript(
-                        "window.scrollTo(0, document.body.scrollHeight)");
+                        "arguments[0].scrollIntoView(true);", job);
                 Thread.sleep(1000);
 
-                List<WebElement> nextBtns = driver.findElements(
-                        By.xpath("//a[contains(@class,'btn-secondary') and .//span[text()='Next']]"));
+                ((JavascriptExecutor) driver).executeScript(
+                        "window.open(arguments[0]);", jobUrl);
 
-                if (nextBtns.isEmpty() || !nextBtns.get(0).isDisplayed()) {
-                    System.out.println("\n✅ No more pages.");
-                    break;
-                }
-
-                String nextUrl = nextBtns.get(0).getAttribute("href");
-                System.out.println("\n→ Going to page " + (pageNum + 1));
-                driver.get(nextUrl);
-                pageNum++;
+                List<String> tabs = new ArrayList<>(driver.getWindowHandles());
+                driver.switchTo().window(tabs.get(tabs.size() - 1));
                 Thread.sleep(3000);
 
+                handleLocationPopup(driver);
+
+                List<WebElement> applyButtons = driver.findElements(
+                        By.cssSelector(".apply-button"));
+                WebElement applyBtn = null;
+
+                for (WebElement btn : applyButtons) {
+                    if (btn.getText().trim().equalsIgnoreCase("Apply")) {
+                        applyBtn = btn;
+                        break;
+                    }
+                }
+
+                if (applyBtn == null) {
+                    System.out.println("⚠ No Apply button, skipping.");
+                    totalSkipped++;
+                    addExcelRow(jobNum, title, company, "⚠ Skipped", "No Apply button", jobUrl);
+                } else {
+                    ((JavascriptExecutor) driver).executeScript(
+                            "arguments[0].click();", applyBtn);
+                    System.out.println("✓ Clicked Apply!");
+                    Thread.sleep(2000);
+
+                    handleLocationPopup(driver);
+                    handleChatbotQuestions(driver, wait);
+
+                    totalApplied++;
+                    System.out.println("✅ Applied to: " + title);
+                    addExcelRow(jobNum, title, company, "✅ Applied", "", jobUrl);
+                }
+
             } catch (Exception e) {
-                System.out.println("Pagination error: " + e.getMessage());
-                break;
+                System.out.println("❌ Error: " + e.getMessage());
+                totalSkipped++;
+                addExcelRow(jobNum, title, company, "❌ Error", e.getMessage(), jobUrl);
+
+            } finally {
+                try {
+                    List<String> tabs = new ArrayList<>(driver.getWindowHandles());
+                    if (tabs.size() > 1) driver.close();
+                    driver.switchTo().window(mainTab);
+                    Thread.sleep(1000);
+                } catch (Exception ignored) {}
             }
         }
 
-        // ✅ Save and email regardless of why loop ended
-        System.out.println("\n⏱ Total time: " +
-                Duration.between(startTime, Instant.now()).toMinutes() + " minutes");
+        // Check time before going to next page
+        if (isTimeUp(startTime)) break;
 
-        File excelFile = saveExcel();
+        try {
+            ((JavascriptExecutor) driver).executeScript(
+                    "window.scrollTo(0, document.body.scrollHeight)");
+            Thread.sleep(1000);
 
-        if (excelFile != null && excelFile.exists()) {
-            emailService.sendEmail(excelFile);
-            System.out.println("📧 Email sent successfully.");
-        } else {
-            System.out.println("❌ Excel file not found.");
+            List<WebElement> nextBtns = driver.findElements(
+                    By.xpath("//a[contains(@class,'btn-secondary') and .//span[text()='Next']]"));
+
+            if (nextBtns.isEmpty() || !nextBtns.get(0).isDisplayed()) {
+                System.out.println("\n✅ No more pages.");
+                break;
+            }
+
+            String nextUrl = nextBtns.get(0).getAttribute("href");
+            System.out.println("\n→ Going to page " + (pageNum + 1));
+            driver.get(nextUrl);
+            pageNum++;
+            Thread.sleep(3000);
+
+        } catch (Exception e) {
+            System.out.println("Pagination error: " + e.getMessage());
+            break;
         }
-
-        System.out.println("\n==============================");
-        System.out.println("✅ Total Applied : " + totalApplied);
-        System.out.println("⚠ Total Skipped : " + totalSkipped);
-        System.out.println("==============================");
     }
+
+    // Save and email
+    System.out.println("\n⏱ Total time: " +
+            Duration.between(startTime, Instant.now()).toMinutes() + " minutes");
+
+    File excelFile = saveExcel();
+
+    if (excelFile != null && excelFile.exists()) {
+        emailService.sendEmail(excelFile);
+        System.out.println("📧 Email sent successfully.");
+    } else {
+        System.out.println("❌ Excel file not found.");
+    }
+
+    System.out.println("\n==============================");
+    System.out.println("✅ Total Applied : " + totalApplied);
+    System.out.println("⚠ Total Skipped : " + totalSkipped);
+    System.out.println("==============================");
+}
 
     private void handleChatbotQuestions(WebDriver driver, WebDriverWait wait) {
         try {
